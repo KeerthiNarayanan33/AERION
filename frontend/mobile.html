@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AERION | Mobile Tactical Camera Transmitter (CAM_02)</title>
+    <style>
+        :root {
+            --bg-base: #030712;
+            --bg-panel: #0b1329;
+            --border-glow: #38bdf8;
+            --accent-cyan: #00e5ff;
+            --accent-danger: #f43f5e;
+            --accent-success: #10b981;
+            --accent-warn: #f59e0b;
+            --font-mono: 'Consolas', 'Courier New', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-touch-callout: none;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: #e2e8f0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 12px;
+        }
+
+        /* Top Military Header */
+        header {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid #1e293b;
+            border-left: 4px solid var(--accent-cyan);
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #fff;
+            font-family: var(--font-mono);
+        }
+
+        .header-subtitle {
+            font-size: 10px;
+            color: var(--border-glow);
+            font-family: var(--font-mono);
+            margin-top: 2px;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 10px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--accent-warn);
+            border: 1px solid var(--accent-warn);
+        }
+
+        .status-pill.transmitting {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-success);
+            border-color: var(--accent-success);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+            animation: pulseGlow 2s infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 8px rgba(16, 185, 129, 0.3); }
+            50% { box-shadow: 0 0 18px rgba(16, 185, 129, 0.6); }
+        }
+
+        /* Video Viewport Container */
+        .video-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            max-height: 52vh;
+            background: #000;
+            border: 2px solid #1e293b;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Tactical HUD Reticle Overlay */
+        .hud-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: rgba(0, 229, 255, 0.85);
+            text-shadow: 0 0 4px rgba(0,0,0,0.8);
+        }
+
+        .hud-crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 48px;
+            height: 48px;
+            border: 1px dashed rgba(0, 229, 255, 0.4);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hud-crosshair::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: rgba(0, 229, 255, 0.8);
+            border-radius: 50%;
+        }
+
+        .hud-bottom {
+            display: flex;
+            justify-content: space-between;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.8);
+            background: rgba(0, 0, 0, 0.4);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        /* Controls Grid */
+        .controls-panel {
+            background: var(--bg-panel);
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            padding: 14px;
+            margin-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn-broadcast {
+            width: 100%;
+            padding: 14px;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            font-family: var(--font-mono);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-broadcast.active {
+            background: linear-gradient(135deg, #e11d48, #be123c);
+            box-shadow: 0 4px 14px rgba(225, 29, 72, 0.5);
+            animation: pulseBtn 1.5s infinite;
+        }
+
+        @keyframes pulseBtn {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #334155;
+            color: #cbd5e1;
+            padding: 9px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: var(--font-mono);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-secondary:active {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        /* Telemetry Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .stat-box {
+            background: #070c18;
+            border: 1px solid #1e293b;
+            border-radius: 4px;
+            padding: 6px 8px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 9px;
+            color: #64748b;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+        }
+
+        .stat-val {
+            font-size: 12px;
+            font-weight: 800;
+            color: #38bdf8;
+            font-family: var(--font-mono);
+            margin-top: 2px;
+        }
+
+        /* Diagnostic Message Box */
+        .diag-box {
+            margin-top: 10px;
+            font-size: 11px;
+            font-family: var(--font-mono);
+            padding: 8px 12px;
+            border-radius: 6px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid #1e293b;
+            color: #94a3b8;
+            line-height: 1.4;
+        }
+
+        /* Mobile Security Protocol Banner */
+        .security-banner {
+            display: none;
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 4px;
+        }
+
+        .security-banner.visible {
+            display: block;
+            animation: fadeInSec 0.3s ease-in-out;
+        }
+
+        @keyframes fadeInSec {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .sec-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: #f59e0b;
+            font-family: var(--font-mono);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .sec-desc {
+            font-size: 11px;
+            color: #cbd5e1;
+            line-height: 1.45;
+            margin-bottom: 10px;
+        }
+
+        .btn-switch-https {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 800;
+            font-family: var(--font-mono);
+            text-decoration: none;
+            padding: 11px 14px;
+            border-radius: 6px;
+            box-shadow: 0 3px 12px rgba(2, 132, 199, 0.45);
+            text-align: center;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .btn-switch-https:active {
+            transform: scale(0.98);
+        }
+
+        .sec-hint {
+            margin-top: 9px;
+            font-size: 10px;
+            color: #94a3b8;
+            line-height: 1.45;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 7px 10px;
+            border-radius: 5px;
+            border-left: 3px solid #38bdf8;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div>
+            <div class="header-title">AERION TACTICAL FIELD TRANSMITTER</div>
+            <div class="header-subtitle" id="headerSubtitle">NODE: CAM_02 (SMARTPHONE RECON FEED)</div>
+
+        </div>
+        <div id="statusPill" class="status-pill">
+            <span id="statusDot">●</span>
+            <span id="statusText">STANDBY</span>
+        </div>
+    </header>
+
+    <!-- Camera Viewport -->
+    <div class="video-container">
+        <video id="mobileVideo" playsinline autoplay muted></video>
+        
+        <!-- Tactical HUD Overlay -->
+        <div class="hud-overlay">
+            <div class="hud-top">
+                <span id="hudResolution">RES: 720p</span>
+                <span id="hudFps">TX: 0.0 FPS</span>
+            </div>
+            <div class="hud-crosshair"></div>
+            <div class="hud-bottom">
+                <span id="hudDtg">DTG: LIVE</span>
+                <span id="hudLatency">PING: -- ms</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Canvas for JPEG Conversion -->
+    <canvas id="offscreenCanvas" style="display: none;"></canvas>
+
+    <!-- Controls Panel -->
+    <div class="controls-panel">
+        <!-- Security Context Banner (HTTPS Switch for Mobile Browsers) -->
+        <div id="securityBanner" class="security-banner">
+            <div class="sec-title">
+                <span>⚠️</span> <span>MOBILE BROWSER SECURITY PROTOCOL</span>
+            </div>
+            <div class="sec-desc">
+                Mobile browsers (Chrome & Safari) strictly require an <strong>HTTPS Secure Context</strong> to unlock camera hardware over local Wi-Fi.
+            </div>
+            <a id="btnSwitchHttps" href="#" class="btn-switch-https">
+                🔒 TAP TO SWITCH TO SECURE HTTPS (PORT 8443)
+            </a>
+            <div class="sec-hint">
+                💡 <strong>1-Step Tip:</strong> When your phone displays <em>"Connection is not private"</em>, tap <strong>"Advanced"</strong> &rarr; <strong>"Proceed to <span class="host-text">server</span> (unsafe)"</strong> to enable camera streaming.
+            </div>
+        </div>
+
+        <button id="btnToggleBroadcast" class="btn-broadcast">
+            <span>🔴</span> START LIVE BROADCAST
+        </button>
+
+        <div class="btn-row">
+            <button id="btnFlipCam" class="btn-secondary">
+                🔄 FLIP (REAR/FRONT)
+            </button>
+            <button id="btnToggleTorch" class="btn-secondary">
+                ⚡ TORCH (FLASHLIGHT)
+            </button>
+        </div>
+
+        <div class="btn-row">
+            <select id="selResolution" class="btn-secondary" style="width: 100%; appearance: none; text-align: center;">
+                <option value="480">480p (FAST / LOW LATENCY)</option>
+                <option value="720" selected>720p (HD SURVEILLANCE)</option>
+                <option value="1080">1080p (FULL HD)</option>
+            </select>
+            <select id="selFps" class="btn-secondary" style="width: 100%; appearance: none; text-align: center;">
+                <option value="15">15 FPS (BATTERY SAVER)</option>
+                <option value="24" selected>24 FPS (TACTICAL)</option>
+                <option value="30">30 FPS (HIGH RATE)</option>
+            </select>
+        </div>
+
+        <!-- Telemetry Stats -->
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-label">SENT FRAMES</div>
+                <div id="statSentCount" class="stat-val">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">TRANSMIT FPS</div>
+                <div id="statFps" class="stat-val">0.0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">UPLINK RTT</div>
+                <div id="statRtt" class="stat-val">-- ms</div>
+            </div>
+        </div>
+
+        <!-- Diagnostics readout -->
+        <div id="diagText" class="diag-box">
+            Ready to transmit. Tap <strong>START LIVE BROADCAST</strong> to grant camera permission and stream live reconnaissance frames directly to the Command Center.
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('mobileVideo');
+        const canvas = document.getElementById('offscreenCanvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const btnToggle = document.getElementById('btnToggleBroadcast');
+        const btnFlip = document.getElementById('btnFlipCam');
+        const btnTorch = document.getElementById('btnToggleTorch');
+        const selRes = document.getElementById('selResolution');
+        const selFps = document.getElementById('selFps');
+
+        const statusPill = document.getElementById('statusPill');
+        const statusText = document.getElementById('statusText');
+        const diagText = document.getElementById('diagText');
+        const hudResolution = document.getElementById('hudResolution');
+        const hudFps = document.getElementById('hudFps');
+        const hudLatency = document.getElementById('hudLatency');
+        const hudDtg = document.getElementById('hudDtg');
+
+        const statSentCount = document.getElementById('statSentCount');
+        const statFps = document.getElementById('statFps');
+        const statRtt = document.getElementById('statRtt');
+
+        let isStreaming = false;
+        let currentStream = null;
+        let facingMode = 'environment'; // 'environment' (rear) or 'user' (front)
+        let torchOn = false;
+        let sentFrames = 0;
+        let frameTimestamps = [];
+        let transmitInterval = null;
+        let targetFps = 24;
+        let isPushing = false;
+
+        // Clock DTG
+        setInterval(() => {
+            const now = new Date();
+            hudDtg.textContent = now.toISOString().slice(11, 19) + ' UTC';
+        }, 1000);
+
+        async function startCamera() {
+            // Guard: Check Secure Context and getUserMedia existence before invoking
+            if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                const httpsUrl = `https://${window.location.hostname}:8443/mobile.html`;
+                diagText.innerHTML = `
+                    <div style="color: #f59e0b; text-align: left; padding: 4px 0;">
+                        <strong>⚠️ HTTPS Secure Context Required</strong><br>
+                        Mobile browsers strictly disable camera access on plain HTTP (<code>http://</code>).<br>
+                        <a href="${httpsUrl}" style="color: #00e5ff; text-decoration: underline; font-weight: bold; display: inline-block; margin-top: 6px;">
+                            👉 Tap here to switch to HTTPS (Port 8443)
+                        </a><br>
+                        <span style="font-size: 10px; color: #94a3b8; display: block; margin-top: 4px;">
+                            (When prompted by your phone browser, tap "Advanced" &rarr; "Proceed" to approve certificate)
+                        </span>
+                    </div>
+                `;
+                // Show prompt to redirect
+                setTimeout(() => {
+                    if (confirm("Camera access on mobile requires HTTPS Secure Context. Switch to Secure Port 8443 now?")) {
+                        window.location.href = httpsUrl;
+                    }
+                }, 300);
+                return false;
+            }
+
+            if (currentStream) {
+                currentStream.getTracks().forEach(t => t.stop());
+            }
+
+            const targetH = parseInt(selRes.value, 10);
+            const targetW = targetH === 1080 ? 1920 : (targetH === 720 ? 1280 : 640);
+
+            const constraints = {
+                video: {
+                    facingMode: { ideal: facingMode },
+                    width: { ideal: targetW },
+                    height: { ideal: targetH },
+                    frameRate: { ideal: targetFps, max: 30 }
+                },
+                audio: false
+            };
+
+            try {
+                diagText.innerHTML = '<span style="color:#38bdf8;">Requesting camera hardware access...</span>';
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = currentStream;
+                await video.play();
+
+                const videoTrack = currentStream.getVideoTracks()[0];
+                const settings = videoTrack.getSettings();
+                const actualW = settings.width || targetW;
+                const actualH = settings.height || targetH;
+
+                canvas.width = actualW;
+                canvas.height = actualH;
+                hudResolution.textContent = `RES: ${actualW}x${actualH}`;
+
+                diagText.innerHTML = `<span style="color:#10b981;">● Camera active: ${actualW}x${actualH} @ ${facingMode.toUpperCase()}. Transmitting frames...</span>`;
+                return true;
+            } catch (err) {
+                console.error('Failed to open mobile camera:', err);
+                let guidance = 'Please verify camera permissions in your browser.';
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    guidance = 'Camera permission was denied. Tap the lock/tune icon in your browser address bar &rarr; Permissions &rarr; Camera &rarr; "Allow", then reload.';
+                } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                    guidance = 'No camera hardware found on this device.';
+                } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                    guidance = 'Camera is in use by another app. Please close background camera apps.';
+                } else if (err.name === 'OverconstrainedError') {
+                    guidance = 'Camera does not support requested resolution. Falling back to 480p...';
+                    selRes.value = '480';
+                }
+                diagText.innerHTML = `<span style="color:#f43f5e;">❌ Camera Error (${err.name}): ${guidance}</span>`;
+                return false;
+            }
+        }
+
+        async function pushNextFrame() {
+            if (!isStreaming || isPushing || video.readyState < 2) return;
+            isPushing = true;
+
+            const t0 = performance.now();
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob(async (blob) => {
+                if (!blob) {
+                    isPushing = false;
+                    return;
+                }
+
+                try {
+                    const res = await fetch('/api/cameras/CAM_02/push-frame', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'image/jpeg' },
+                        body: blob
+                    });
+
+                    const rtt = Math.round(performance.now() - t0);
+                    if (res.ok) {
+                        sentFrames++;
+                        statSentCount.textContent = sentFrames.toLocaleString();
+                        statRtt.textContent = `${rtt} ms`;
+                        hudLatency.textContent = `PING: ${rtt} ms`;
+
+                        // Calculate FPS
+                        const now = performance.now();
+                        frameTimestamps.push(now);
+                        frameTimestamps = frameTimestamps.filter(t => now - t <= 1000);
+                        const currentFps = frameTimestamps.length.toFixed(1);
+                        statFps.textContent = currentFps;
+                        hudFps.textContent = `TX: ${currentFps} FPS`;
+                    }
+                } catch (e) {
+                    diagText.innerHTML = `<span style="color:#f59e0b;">⚠️ Frame uplink issue: ${e.message}</span>`;
+                } finally {
+                    isPushing = false;
+                }
+            }, 'image/jpeg', 0.65);
+        }
+
+        function startTransmission() {
+            isStreaming = true;
+            btnToggle.classList.add('active');
+            btnToggle.innerHTML = '<span>⏹</span> STOP BROADCAST';
+            statusPill.classList.add('transmitting');
+            statusText.textContent = 'TRANSMITTING';
+
+            targetFps = parseInt(selFps.value, 10);
+            const intervalMs = Math.round(1000 / targetFps);
+            transmitInterval = setInterval(pushNextFrame, intervalMs);
+        }
+
+        function stopTransmission() {
+            isStreaming = false;
+            if (transmitInterval) {
+                clearInterval(transmitInterval);
+                transmitInterval = null;
+            }
+            if (currentStream) {
+                currentStream.getTracks().forEach(t => t.stop());
+                currentStream = null;
+            }
+
+            btnToggle.classList.remove('active');
+            btnToggle.innerHTML = '<span>🔴</span> START LIVE BROADCAST';
+            statusPill.classList.remove('transmitting');
+            statusText.textContent = 'STANDBY';
+            statFps.textContent = '0.0';
+            hudFps.textContent = 'TX: 0.0 FPS';
+            diagText.textContent = 'Transmission stopped. Standing by.';
+        }
+
+        btnToggle.addEventListener('click', async () => {
+            if (!isStreaming) {
+                const ok = await startCamera();
+                if (ok) startTransmission();
+            } else {
+                stopTransmission();
+            }
+        });
+
+        btnFlip.addEventListener('click', async () => {
+            facingMode = (facingMode === 'environment') ? 'user' : 'environment';
+            if (isStreaming) {
+                await startCamera();
+            }
+        });
+
+        btnTorch.addEventListener('click', async () => {
+            if (!currentStream) return;
+            const track = currentStream.getVideoTracks()[0];
+            const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+            if (capabilities.torch) {
+                torchOn = !torchOn;
+                await track.applyConstraints({ advanced: [{ torch: torchOn }] });
+                btnTorch.style.borderColor = torchOn ? '#f59e0b' : '#334155';
+                btnTorch.style.color = torchOn ? '#f59e0b' : '#cbd5e1';
+            } else {
+                diagText.innerHTML = '<span style="color:#f59e0b;">Flashlight (torch) constraint not supported by this camera hardware.</span>';
+            }
+        });
+
+        selRes.addEventListener('change', async () => {
+            if (isStreaming) {
+                await startCamera();
+            }
+        });
+
+        selFps.addEventListener('change', () => {
+            targetFps = parseInt(selFps.value, 10);
+            if (isStreaming) {
+                clearInterval(transmitInterval);
+                transmitInterval = setInterval(pushNextFrame, Math.round(1000 / targetFps));
+            }
+        });
+
+        // Initialize Secure Context Check on Page Load
+        function checkSecurityContext() {
+            const hasMediaDevices = Boolean(
+                window.isSecureContext &&
+                navigator.mediaDevices &&
+                navigator.mediaDevices.getUserMedia
+            );
+
+            const secBanner = document.getElementById('securityBanner');
+            const btnSwitch = document.getElementById('btnSwitchHttps');
+            const hostElements = document.querySelectorAll('.host-text');
+            const hostname = window.location.hostname || 'localhost';
+            const subTitle = document.getElementById('headerSubtitle');
+
+            if (subTitle) {
+                subTitle.textContent = `NODE: CAM_02 (${window.location.protocol.toUpperCase()} // ${window.location.host})`;
+            }
+
+            hostElements.forEach(el => { el.textContent = hostname; });
+
+            if (!hasMediaDevices) {
+                if (secBanner) secBanner.classList.add('visible');
+                if (btnSwitch) {
+                    btnSwitch.href = `https://${hostname}:8443/mobile.html`;
+                }
+                diagText.innerHTML = `
+                    <span style="color:#f59e0b;">
+                        ⚠️ <strong>HTTPS Required:</strong> Tap <strong>"TAP TO SWITCH TO SECURE HTTPS"</strong> above to enable camera hardware access on your phone.
+                    </span>
+                `;
+            } else if (window.location.protocol === 'https:') {
+                if (secBanner) secBanner.classList.remove('visible');
+                diagText.innerHTML = `
+                    <span style="color:#10b981;">
+                        🔒 <strong>SECURE TRANSMISSION ACTIVE (${window.location.host}).</strong> Camera hardware ready. Tap <strong>START LIVE BROADCAST</strong> to begin streaming reconnaissance frames to CAM_02.
+                    </span>
+                `;
+            }
+        }
+
+
+        checkSecurityContext();
+    </script>
+</body>
+</html>

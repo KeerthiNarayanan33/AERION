@@ -1,0 +1,63 @@
+# Environment variables
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Media & Storage (Never commit runtime surveillance footage)
+storage/events/*
+storage/snapshots/*
+storage/logs/*
+!storage/events/.gitkeep
+!storage/snapshots/.gitkeep
+!storage/logs/.gitkeep
+storage/*.db
+*.db-journal
+
+# Models
+models/*.pt
+models/*.onnx
+!models/.gitkeep
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Node / Testing artifacts
+node_modules/
+package-lock.json
+*.png
+
+# Large Binaries / APKs
+*.apk
+reverse engineering/*.apk

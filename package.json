@@ -1,0 +1,20 @@
+{
+  "name": "sih-2026",
+  "version": "1.0.0",
+  "description": "**Smart India Hackathon 2026 Prototype**",
+  "main": "index.js",
+  "type": "module",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "playwright": "^1.63.0"
+  }
+}
