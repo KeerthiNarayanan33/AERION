@@ -14,22 +14,38 @@ export class PersonsManager {
     }
 
     async init() {
-        if (!this._eventsBound) {
-            this._bindEvents();
-            this._eventsBound = true;
+        console.log('[PERSONS_MANAGER] init() started...');
+        try {
+            if (!this._eventsBound) {
+                console.log('[PERSONS_MANAGER] Binding events...');
+                this._bindEvents();
+                this._eventsBound = true;
+                console.log('[PERSONS_MANAGER] Events bound successfully.');
+            }
+            console.log('[PERSONS_MANAGER] Loading persons first for instant table display...');
+            await this.loadPersons();
+            console.log('[PERSONS_MANAGER] Persons loaded, count:', this.persons.length);
+            // Load zones in background for modal checkboxes without blocking table
+            this.loadZones();
+        } catch (err) {
+            console.error('[PERSONS_MANAGER] Fatal error in init():', err);
         }
-        await this.loadZones();
-        await this.loadPersons();
     }
 
     async loadZones() {
         try {
-            const res = await fetch('/api/zones');
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 6000);
+            const res = await fetch('/api/zones', { signal: controller.signal });
+            clearTimeout(timeoutId);
             if (res.ok) {
                 const data = await res.json();
                 this._zones = Array.isArray(data) ? data : (data.zones || []);
             }
-        } catch (e) { this._zones = []; }
+        } catch (e) {
+            console.warn('[PERSONS_MANAGER] loadZones non-fatal error:', e);
+            this._zones = [];
+        }
     }
 
     async loadPersons() {
@@ -37,15 +53,33 @@ export class PersonsManager {
             const params = new URLSearchParams();
             if (this.searchQuery) params.set('search', this.searchQuery);
             if (this.filterStatus) params.set('status', this.filterStatus);
-            const res = await fetch(`/api/persons?${params}`);
-            if (!res.ok) throw new Error('Failed to fetch persons');
+            const url = params.toString() ? `/api/persons?${params}` : '/api/persons';
+            console.log('[PERSONS_MANAGER] Fetching persons from:', url);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            const res = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            console.log('[PERSONS_MANAGER] Fetch response status:', res.status);
+            if (!res.ok) throw new Error('Failed to fetch persons: ' + res.status);
             const data = await res.json();
             this.persons = data.persons || [];
             this.filteredPersons = this.persons;
+            console.log('[PERSONS_MANAGER] Rendering table with', this.filteredPersons.length, 'persons');
             this._renderTable();
             this._renderSummaryBadges();
+            console.log('[PERSONS_MANAGER] Render complete.');
         } catch (e) {
-            console.error('[PERSONS] Load error:', e);
+            console.error('[PERSONS_MANAGER] Load error:', e);
+            const tbody = document.getElementById('personsTableBody');
+            if (tbody && this.persons.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" style="text-align:center;padding:40px;color:var(--accent-red,#ef4444);">
+                            <div style="font-size:13px;margin-bottom:8px;">Failed to load authorized persons.</div>
+                            <button class="btn-tactical" onclick="window.app?.personsManager?.loadPersons()" style="padding:4px 14px;font-size:11px;">RETRY</button>
+                        </td>
+                    </tr>`;
+            }
         }
     }
 

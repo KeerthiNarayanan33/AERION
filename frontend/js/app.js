@@ -40,10 +40,7 @@ class SurveillanceApp {
     async init() {
         console.log('[APP] Initializing Border Surveillance Command Center...');
 
-        // 1. Initialize Navigation Tabs
-        this.setupNavigation();
-
-        // 2. Initialize Components
+        // 1. Initialize Components
         this.radarView = new RadarView('radarCanvas');
         this.radarViewExpanded = new RadarView('radarCanvasExpanded');
         this.alertFeed = new AlertFeed('alertFeedContainer', 'alertCountBadge');
@@ -52,6 +49,9 @@ class SurveillanceApp {
         this.metricsMonitor = new MetricsMonitor();
         this.uavView = new UAVView();
         this.personsManager = new PersonsManager();
+
+        // 2. Initialize Navigation Tabs (can now safely reference all components)
+        this.setupNavigation();
 
         // 3. Start Clock
         this.startClock();
@@ -2850,6 +2850,8 @@ class SurveillanceApp {
 
         return () => {
             clearTimeout(reconnectTimer);
+            imgEl.onerror = null;
+            imgEl.src = '';
         };
     }
 

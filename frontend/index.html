@@ -314,13 +314,14 @@
 
                         <!-- Tactical Multi-Camera 3-Way Grid -->
                         <div id="tacticalMultiCamGrid" class="tactical-multicam-grid" style="display: none;">
+                            <!-- Multi-cam cards with lazy streaming -->
                             <div class="tactical-multicam-card">
                                 <div class="card-header">
                                     <span style="color:#00e5ff;font-weight:700;">● CAM_01: PRIMARY WEBCAM</span>
                                     <span class="status-pill online" style="font-size:9px;"><span class="dot"></span> ONLINE</span>
                                 </div>
                                 <div class="video-frame-container ratio-16-9" style="width:100%;height:220px;position:relative;">
-                                    <img class="video-element fit-contain" id="gridCam01Img" src="/api/cameras/CAM_01/stream" alt="CAM_01 Stream" />
+                                    <img class="video-element fit-contain" id="gridCam01Img" data-src="/api/cameras/CAM_01/stream" src="" alt="CAM_01 Stream" />
                                     <div class="video-overlay-footer" style="padding:4px 8px;font-size:9px;">
                                         <span>ZONE_B (Warning)</span>
                                         <span>1280x720</span>
@@ -333,7 +334,7 @@
                                     <span class="status-pill offline" id="gridCam02Pill" style="font-size:9px;"><span class="dot"></span> IP CAM</span>
                                 </div>
                                 <div class="video-frame-container ratio-16-9" style="width:100%;height:220px;position:relative;">
-                                    <img class="video-element fit-contain" id="gridCam02Img" src="/api/cameras/CAM_02/stream" alt="CAM_02 Stream" />
+                                    <img class="video-element fit-contain" id="gridCam02Img" data-src="/api/cameras/CAM_02/stream" src="" alt="CAM_02 Stream" />
                                     <div class="video-overlay-footer" style="padding:4px 8px;font-size:9px;">
                                         <span>ZONE_C (Restricted)</span>
                                         <span>1920x1080</span>
@@ -346,7 +347,7 @@
                                     <span class="status-pill online" style="font-size:9px;"><span class="dot"></span> AERIAL FLIR</span>
                                 </div>
                                 <div class="video-frame-container ratio-16-9" style="width:100%;height:220px;position:relative;">
-                                    <img class="video-element fit-contain" id="gridUavImg" src="/api/cameras/UAV_01/stream" alt="UAV_01 Stream" />
+                                    <img class="video-element fit-contain" id="gridUavImg" data-src="/api/cameras/UAV_01/stream" src="" alt="UAV_01 Stream" />
                                     <div class="video-overlay-footer" style="padding:4px 8px;font-size:9px;">
                                         <span>DYNAMIC RECON</span>
                                         <span>960x540</span>
@@ -1550,8 +1551,8 @@
 
                             <!-- Aerial Recon HUD Display -->
                             <div class="video-frame-container" style="background: #050b14; aspect-ratio: 16/9; max-height: 260px; width: 100%; position: relative; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                                <!-- Live UAV Aerial Reconnaissance Video Stream -->
-                                <img class="video-element fit-cover" id="uavReconImg" src="/api/cameras/UAV_01/stream" alt="UAV Aerial Reconnaissance Stream" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; display: block;" onerror="this.style.display='none'; document.getElementById('uavFeedPlaceholder').style.display='block';" onload="this.style.display='block'; document.getElementById('uavFeedPlaceholder').style.display='none';" />
+                                <!-- Live UAV Aerial Reconnaissance Video Stream (lazy loaded on UAV tab) -->
+                                <img class="video-element fit-cover" id="uavReconImg" data-src="/api/cameras/UAV_01/stream" src="" alt="UAV Aerial Reconnaissance Stream" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; display: block;" onerror="this.style.display='none'; document.getElementById('uavFeedPlaceholder').style.display='block';" onload="this.style.display='block'; document.getElementById('uavFeedPlaceholder').style.display='none';" />
 
                                 <!-- Tactical HUD Reticle Canvas -->
                                 <canvas id="uavHudCanvas" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 2; pointer-events: none;"></canvas>
