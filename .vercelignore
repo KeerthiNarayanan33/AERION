@@ -1,0 +1,35 @@
+# Vercel Deployment Ignore Rules for AERION
+
+# Backend and Python Services (hosted on persistent edge/server)
+backend/
+*.py
+*.pyc
+__pycache__/
+env/
+venv/
+.venv/
+requirements.txt
+Dockerfile
+docker-compose.yml
+run_tests.bat
+start_system.bat
+stop_system.bat
+seed_mockup_events.py
+
+# Large Assets & Storage (Prevents exceeding Vercel 100MB bundle limit)
+storage/
+models/
+yolov8n.pt
+*.pt
+*.onnx
+*.mp4
+*.apk
+reverse engineering/
+esp32/
+certs/
+*.png
+
+# Node & Testing
+node_modules/
+tests/
+.pytest_cache/

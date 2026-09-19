@@ -18,11 +18,26 @@ class SurveillanceSocket {
     }
 
     connect() {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/ws/live`;
+        let wsUrl;
+        const customBackend = window.AERION_BACKEND_URL || localStorage.getItem('AERION_BACKEND_URL');
+        if (customBackend) {
+            const clean = customBackend.trim().replace(/^https?:\/\//i, '').replace(/^wss?:\/\//i, '').replace(/\/+$/, '');
+            const wsProto = (customBackend.startsWith('http://') || customBackend.startsWith('ws://')) ? 'ws:' : 'wss:';
+            wsUrl = `${wsProto}//${clean}/ws/live`;
+        } else {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            wsUrl = `${protocol}//${window.location.host}/ws/live`;
+        }
         
         console.log(`[WS] Connecting to ${wsUrl}...`);
-        this.socket = new WebSocket(wsUrl);
+        try {
+            this.socket = new WebSocket(wsUrl);
+        } catch (e) {
+            console.error('[WS] Failed to initialize WebSocket:', e);
+            this.updateStatus(false);
+            this.scheduleReconnect();
+            return;
+        }
 
         this.socket.onopen = () => {
             console.log('[WS] Connected successfully.');
@@ -101,6 +116,26 @@ class SurveillanceSocket {
             this.socket.send(typeof data === 'string' ? data : JSON.stringify(data));
         }
     }
+
+    reconnectWithCustomUrl(newUrl) {
+        if (newUrl !== undefined) {
+            window.AERION_BACKEND_URL = newUrl;
+            if (newUrl) {
+                localStorage.setItem('AERION_BACKEND_URL', newUrl);
+            } else {
+                localStorage.removeItem('AERION_BACKEND_URL');
+            }
+        }
+        if (this.socket) {
+            try {
+                this.socket.onclose = null;
+                this.socket.close();
+            } catch (_) {}
+        }
+        this.reconnectAttempts = 0;
+        this.connect();
+    }
 }
 
 export const wsClient = new SurveillanceSocket();
+window.surveillanceSocket = wsClient;

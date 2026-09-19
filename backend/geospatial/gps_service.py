@@ -395,7 +395,7 @@ class GPSManager:
             return self.live_provider
         return self.sim_provider
 
-    def get_position(self) -> Tuple[float, float]:
+    def get_position(self) -> tuple[float, float]:
         """Returns (latitude, longitude) of current drone position."""
         p = self.active_provider
         return p.get_latitude(), p.get_longitude()
