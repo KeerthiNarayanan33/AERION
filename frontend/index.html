@@ -11,40 +11,8 @@
     <link rel="stylesheet" href="/static/css/layout.css?v=20260911_0210">
     <link rel="stylesheet" href="/static/css/components.css?v=20260911_0210">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%2300e5ff' d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/></svg>">
-    <!-- AERION Dynamic Remote Backend Adapter (Vercel & Cloud Deployment) -->
-    <script>
-        (function() {
-            window.AERION_BACKEND_URL = localStorage.getItem('AERION_BACKEND_URL') || '';
-            const origFetch = window.fetch;
-            window.fetch = function(resource, init) {
-                if (typeof resource === 'string' && window.AERION_BACKEND_URL) {
-                    const backend = window.AERION_BACKEND_URL.replace(/\/+$/, '');
-                    if (resource.startsWith('/api/') || resource.startsWith('/storage/')) {
-                        resource = backend + resource;
-                    }
-                }
-                return origFetch(resource, init);
-            };
-
-            const origImgSrc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
-            if (origImgSrc && origImgSrc.set) {
-                Object.defineProperty(HTMLImageElement.prototype, 'src', {
-                    set: function(val) {
-                        if (typeof val === 'string' && window.AERION_BACKEND_URL) {
-                            const backend = window.AERION_BACKEND_URL.replace(/\/+$/, '');
-                            if (val.startsWith('/api/') || val.startsWith('/storage/')) {
-                                val = backend + val;
-                            }
-                        }
-                        return origImgSrc.set.call(this, val);
-                    },
-                    get: function() {
-                        return origImgSrc.get.call(this);
-                    }
-                });
-            }
-        })();
-    </script>
+    <!-- Standalone Simulation & Mock Engine for Vercel (Must execute before DOM parsing) -->
+    <script src="/static/js/standalone_engine.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -330,6 +298,7 @@
                             <button class="btn-tactical" id="btnToggleAspectRatio" title="Change Aspect Ratio (Contain / 16:9 / 4:3 / Stretch)" style="border-color: #38bdf8; color: #38bdf8;">📐 RATIO: AUTO</button>
                             <button class="btn-tactical" id="btnToggleCamViewMode" title="Switch between Single Monitor and Multi-Camera Grid" style="border-color: #10b981; color: #10b981;">▦ VIEW: SINGLE</button>
                             <button class="btn-tactical" id="btnToggleCamMirror" title="Toggle Mirroring / Flip Camera Feed" style="border-color: #a855f7; color: #c084fc;">🪞 FLIP</button>
+                            <button class="btn-tactical" id="btnConnectLocalWebcam" title="Connect Real Device Camera (Webcam)" style="border-color: #eab308; color: #fde047;">📹 LIVE WEBCAM</button>
                             <button class="btn-tactical" id="btnMonitorStreamMode" style="background: rgba(0, 229, 255, 0.15); border-color: var(--accent-cyan); color: var(--accent-cyan);">MODE: MJPEG STREAM</button>
                         </div>
                     </div>
@@ -343,7 +312,7 @@
                                 <span class="video-tag" id="liveMonitorTrackBadge" style="background: rgba(0, 229, 255, 0.2); border-color: var(--accent-cyan); color: var(--accent-cyan);">YOLO TRACKING ACTIVE</span>
                                 <span class="video-tag" id="liveMonitorResBadge">1280x720</span>
                             </div>
-                            <img class="video-element fit-contain" id="tacticalMonitorImg" src="/api/cameras/CAM_01/stream" alt="Live Tactical Monitor" />
+                            <img class="video-element fit-contain" id="tacticalMonitorImg" src="/api/cameras/CAM_01/stream" alt="Live Tactical Monitor" onerror="this.onerror=null; this.src=window.generateTacticalCamSvg ? window.generateTacticalCamSvg('CAM_01', 'ONLINE') : '';" />
                             <div class="video-overlay-footer">
                                 <span id="liveMonitorZone">ZONE: ZONE_B (Warning Sector)</span>
                                 <span>FPS: <span id="liveMonitorFps">30.0</span> | LATENCY: <span id="liveMonitorLatency">18ms</span></span>
@@ -4628,8 +4597,6 @@
         })();
     </script>
 
-    <!-- Standalone Simulation & Mock Engine for Vercel -->
-    <script src="/static/js/standalone_engine.js"></script>
     <!-- Tactical Audio Alert Synthesizer -->
     <script src="/static/js/audio_alert.js"></script>
     <!-- Application Script -->
