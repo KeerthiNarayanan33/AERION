@@ -7,9 +7,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/design_tokens.css?v=20260911_0210">
-    <link rel="stylesheet" href="/static/css/layout.css?v=20260911_0210">
-    <link rel="stylesheet" href="/static/css/components.css?v=20260911_0210">
+    <link rel="stylesheet" href="/static/css/design_tokens.css?v=20260921_1400">
+    <link rel="stylesheet" href="/static/css/layout.css?v=20260921_1400">
+    <link rel="stylesheet" href="/static/css/components.css?v=20260921_1400">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%2300e5ff' d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/></svg>">
     <!-- Standalone Simulation & Mock Engine for Vercel (Must execute before DOM parsing) -->
     <script src="/static/js/standalone_engine.js"></script>
@@ -27,39 +27,54 @@
                 </div>
             </div>
 
-            <!-- Hardware & Subsystem Status Pills -->
-            <div class="status-pill-group">
-                <div class="status-pill online" title="System Operational">
-                    <span class="dot"></span> System Online
+            <!-- Sleek Single-Row Tactical HUD Status Capsule (Zero Vertical Stacking) -->
+            <div class="hud-status-strip" id="hudStatusStrip" style="display: inline-flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; gap: 6px !important;">
+                <div class="status-pill online" id="headerSystemPill" title="Sentinel Defense System Operational">
+                    <span class="dot dot-pulse"></span>
+                    <span class="pill-text">SYS ONLINE</span>
                 </div>
-                <div class="status-pill online" title="NVIDIA GeForce RTX 3050 (6GB VRAM)">
-                    <span class="dot"></span> AI: RTX 3050
+                <div class="status-pill ai-pill" id="headerAiPill" title="NVIDIA GeForce RTX 3050 (6GB VRAM) · CUDA &amp; TensorRT Active">
+                    <span class="dot dot-cyan"></span>
+                    <span class="pill-text">AI: RTX 3050</span>
                 </div>
-                <div class="status-pill online" title="LD2450 24GHz mmWave radar via ESP32">
-                    <span class="dot"></span> Radar: LD2450
+
+                <span class="hud-bar-pipe"></span>
+
+                <div class="status-pill online" id="headerRadarPill" title="LD2450 24GHz mmWave FMCW Radar via ESP32">
+                    <span class="dot dot-pulse"></span>
+                    <span class="pill-text">RADAR: LD2450</span>
                 </div>
-                <div class="status-pill online">
-                    <span class="dot"></span> Cam 01: Online
+                <div class="status-pill online" id="headerCam01Pill" title="Primary Fixed Optical CCTV (Webcam) - Sector B">
+                    <span class="dot dot-pulse"></span>
+                    <span class="pill-text" id="headerCam01Label">CAM 01: ON</span>
                 </div>
-                <div class="status-pill offline">
-                    <span class="dot"></span> Cam 02: Offline
+                <div class="status-pill standby" id="headerCam02Pill" title="Smartphone Network IP Stream - Sector C">
+                    <span class="dot dot-amber"></span>
+                    <span class="pill-text" id="headerCam02Label">CAM 02: STBY</span>
                 </div>
-                <div class="status-pill standby" id="uavStatusPill">
-                    <span class="dot"></span> <span class="status-text">UAV: Standby</span>
+                <div class="status-pill standby" id="uavStatusPill" title="Autonomous Recon UAV Telemetry">
+                    <span class="dot dot-amber"></span>
+                    <span class="status-text pill-text">UAV: STBY</span>
                 </div>
-                <div class="status-pill online" id="wsStatus">
-                    <span class="dot"></span> <span class="ws-label">Feed: Live</span>
+
+                <span class="hud-bar-pipe"></span>
+
+                <div class="status-pill online" id="wsStatus" title="Real-time WebSocket Low-Latency Data Stream">
+                    <span class="dot dot-cyan-pulse"></span>
+                    <span class="ws-label pill-text">FEED: LIVE</span>
                 </div>
-                <button class="status-pill" id="btnGatewayConfig" style="cursor: pointer; background: rgba(0, 229, 255, 0.12); border: 1px solid rgba(0, 229, 255, 0.4); color: #00e5ff; font-size: 11px; font-weight: 600; padding: 3px 9px; display: inline-flex; align-items: center; gap: 5px; border-radius: 4px; transition: all 0.2s;" title="Configure Remote Backend Server URL (Vercel / Cloud / Ngrok Tunnel)">
-                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20M2 12h20"/></svg>
-                    <span id="gatewayStatusLabel">GATEWAY: LOCAL</span>
+                <button class="status-pill gateway-pill-btn" id="btnGatewayConfig" title="Configure Remote Backend Server URL (Vercel / Cloud / Ngrok Tunnel)">
+                    <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20M2 12h20"/></svg>
+                    <span id="gatewayStatusLabel" class="pill-text">GATEWAY: LOCAL</span>
                 </button>
-                <div id="systemModeBadge" class="mode-badge simulated" data-mode="SIMULATED" style="display: none;">
-                    MODE: SIMULATED
-                </div>
-                <div id="rfStatusPill" style="display: none;"><span id="rfStatusText">RF: CLEAN</span></div>
-                <button id="btnToggleAudio" style="display: none;"><span id="audioStatusText">ALARM</span></button>
             </div>
+
+            <!-- Hidden legacy elements for script compatibility -->
+            <div id="systemModeBadge" class="mode-badge simulated" data-mode="SIMULATED" style="display: none;">
+                MODE: SIMULATED
+            </div>
+            <div id="rfStatusPill" style="display: none;"><span id="rfStatusText">RF: CLEAN</span></div>
+            <button id="btnToggleAudio" style="display: none;"><span id="audioStatusText">ALARM</span></button>
 
             <!-- Right: Notification Bell, User Profile, 2-Line Clock -->
             <div class="header-right-group">
@@ -313,6 +328,7 @@
                                 <span class="video-tag" id="liveMonitorResBadge">1280x720</span>
                             </div>
                             <img class="video-element fit-contain" id="tacticalMonitorImg" src="/api/cameras/CAM_01/stream" alt="Live Tactical Monitor" onerror="this.onerror=null; this.src=window.generateTacticalCamSvg ? window.generateTacticalCamSvg('CAM_01', 'ONLINE') : '';" />
+                            <video class="video-element fit-contain" id="tacticalWebcamVideo" autoplay playsinline muted style="display: none; width: 100%; height: 100%; object-fit: contain;"></video>
                             <div class="video-overlay-footer">
                                 <span id="liveMonitorZone">ZONE: ZONE_B (Warning Sector)</span>
                                 <span>FPS: <span id="liveMonitorFps">30.0</span> | LATENCY: <span id="liveMonitorLatency">18ms</span></span>

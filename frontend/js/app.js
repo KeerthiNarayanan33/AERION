@@ -733,6 +733,7 @@ class SurveillanceApp {
             }
             if (data.cameras) {
                 for (const [camId, camData] of Object.entries(data.cameras)) {
+                    this.updateCameraStatusUI(camId, camData.status);
                     const card = document.getElementById(`card-${camId}`);
                     if (card) {
                         const fpsEl = card.querySelector('.cam-fps-val');
@@ -2753,6 +2754,91 @@ class SurveillanceApp {
             });
         }
 
+        // Real Browser Device Webcam Toggle
+        const btnWebcam = document.getElementById('btnConnectLocalWebcam');
+        const webcamVideo = document.getElementById('tacticalWebcamVideo');
+        let localWebcamStream = null;
+        let pushFrameInterval = null;
+
+        if (btnWebcam) {
+            btnWebcam.addEventListener('click', async () => {
+                if (localWebcamStream) {
+                    // Turn OFF webcam
+                    localWebcamStream.getTracks().forEach(t => t.stop());
+                    localWebcamStream = null;
+                    if (pushFrameInterval) {
+                        clearInterval(pushFrameInterval);
+                        pushFrameInterval = null;
+                    }
+                    if (webcamVideo) {
+                        webcamVideo.srcObject = null;
+                        webcamVideo.style.display = 'none';
+                    }
+                    if (monitorImg) {
+                        monitorImg.style.display = 'block';
+                    }
+                    btnWebcam.style.background = 'transparent';
+                    btnWebcam.textContent = '📹 LIVE WEBCAM';
+                    btnWebcam.style.borderColor = '#eab308';
+                    btnWebcam.style.color = '#fde047';
+                    console.log('[WEBCAM] Local device webcam disabled.');
+                    return;
+                }
+
+                // Turn ON webcam
+                try {
+                    console.log('[WEBCAM] Requesting browser camera permissions...');
+                    localWebcamStream = await navigator.mediaDevices.getUserMedia({
+                        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }
+                    });
+
+                    if (webcamVideo) {
+                        webcamVideo.srcObject = localWebcamStream;
+                        webcamVideo.style.display = 'block';
+                        await webcamVideo.play();
+                    }
+                    if (monitorImg) {
+                        monitorImg.style.display = 'none';
+                    }
+
+                    btnWebcam.style.background = 'rgba(16, 185, 129, 0.25)';
+                    btnWebcam.style.borderColor = '#10b981';
+                    btnWebcam.style.color = '#34d399';
+                    btnWebcam.textContent = '📹 WEBCAM ACTIVE';
+
+                    if (tagStatus) {
+                        tagStatus.innerHTML = `<span class="rec-dot"></span> LIVE FEED: REAL WEBCAM (LOCAL)`;
+                    }
+
+                    // Push frames to backend for YOLO processing
+                    const offscreenCanvas = document.createElement('canvas');
+                    offscreenCanvas.width = 640;
+                    offscreenCanvas.height = 480;
+                    const ctx = offscreenCanvas.getContext('2d');
+
+                    pushFrameInterval = setInterval(async () => {
+                        if (!localWebcamStream || !webcamVideo || webcamVideo.videoWidth === 0) return;
+                        try {
+                            ctx.drawImage(webcamVideo, 0, 0, 640, 480);
+                            const dataUrl = offscreenCanvas.toDataURL('image/jpeg', 0.65);
+                            await fetch('/api/cameras/CAM_01/push-frame', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'image/jpeg' },
+                                body: dataUrl
+                            }).catch(() => {});
+                        } catch (e) {
+                            // ignore frame drop
+                        }
+                    }, 120);
+
+                    console.log('[WEBCAM] Local webcam stream active and streaming frames to backend.');
+                } catch (err) {
+                    console.warn('[WEBCAM] Browser camera access failed:', err);
+                    alert('Camera access was not granted or no webcam was detected on this device: ' + err.message);
+                }
+            });
+        }
+
         const updateMonitorStream = (camId) => {
             activeCamId = camId;
             if (currentCleanup) {
@@ -2872,6 +2958,33 @@ class SurveillanceApp {
                 statusTag.textContent = status;
                 statusTag.className = `video-tag ${status === 'ONLINE' ? 'live-rec' : ''}`;
             }
+        }
+
+        // Dynamically reflect live camera state in top header HUD ribbon
+        if (cameraId === 'CAM_01') {
+            const pill = document.getElementById('headerCam01Pill');
+            const label = document.getElementById('headerCam01Label');
+            if (pill) {
+                const normStatus = (status || 'OFFLINE').toUpperCase();
+                pill.className = `status-pill ${normStatus.toLowerCase()}`;
+                const dot = pill.querySelector('.dot');
+                if (dot) {
+                    dot.className = `dot ${normStatus === 'ONLINE' ? 'dot-pulse' : (normStatus === 'STANDBY' ? 'dot-amber' : '')}`;
+                }
+            }
+            if (label) label.textContent = `CAM 01: ${status === 'ONLINE' ? 'ONLINE' : status}`;
+        } else if (cameraId === 'CAM_02') {
+            const pill = document.getElementById('headerCam02Pill');
+            const label = document.getElementById('headerCam02Label');
+            if (pill) {
+                const normStatus = (status || 'OFFLINE').toUpperCase();
+                pill.className = `status-pill ${normStatus.toLowerCase()}`;
+                const dot = pill.querySelector('.dot');
+                if (dot) {
+                    dot.className = `dot ${normStatus === 'ONLINE' ? 'dot-pulse' : (normStatus === 'STANDBY' ? 'dot-amber' : '')}`;
+                }
+            }
+            if (label) label.textContent = `CAM 02: ${status}`;
         }
     }
 

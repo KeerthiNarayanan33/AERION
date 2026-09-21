@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     # AI Detection & Tracking
     AI_INFERENCE_FPS: int = 15
     DETECTION_CONFIDENCE: float = 0.50
-    YOLO_MODEL_NAME: str = "yolov8n.pt"
+    YOLO_MODEL_NAME: str = "yolo11n.pt"
     TRACKING_ENABLED: bool = True
 
     # Radar & ESP32

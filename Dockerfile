@@ -1,15 +1,17 @@
-# SENTINEL-AI | Smart India Hackathon 2026
-# Autonomous Multi-Sensor Border Surveillance & Intrusion Detection System
-# Production Offline-First Container Image
+# SENTINEL-AI | AERION Autonomous Border Surveillance System
+# Production Container Image for Hugging Face Spaces & Cloud Deployment
 
 FROM python:3.11-slim
 
 # Prevent Python from writing .pyc files and enable unbuffered logging
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    DEBIAN_FRONTEND=noninteractive
+    DEBIAN_FRONTEND=noninteractive \
+    PORT=7860 \
+    SYSTEM_MODE=SIMULATED \
+    HOME=/home/user
 
-# Install system dependencies required for OpenCV, Video transcoding (FFmpeg), and networking
+# Install system dependencies required for OpenCV, FFmpeg, and networking
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libgl1 \
@@ -19,9 +21,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
+# Set up non-root user for Hugging Face Spaces (UID 1000)
+RUN useradd -m -u 1000 user
+
 WORKDIR /app
 
-# Install Python dependencies
+# Install lightweight CPU-only PyTorch first for fast build, followed by requirements
+RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -32,15 +39,19 @@ COPY models/ ./models/
 COPY yolov8n.pt .
 COPY .env.example .env
 
-# Create persistent storage mountpoints
-RUN mkdir -p storage/snapshots storage/recordings storage/evidence models
+# Create persistent storage mountpoints and assign permissions
+RUN mkdir -p storage/snapshots storage/recordings storage/evidence models \
+    && chown -R user:user /app
 
-# Expose FastAPI Command Center HTTP/WebSocket port
-EXPOSE 8000
+# Switch to non-root user
+USER user
 
-# Container health inspection
-HEALTHCHECK --interval=20s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8000/api/system/health || exit 1
+# Expose default port for Hugging Face Spaces
+EXPOSE 7860
 
-# Launch High-Performance Uvicorn Server
-CMD ["python", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Health inspection check
+HEALTHCHECK --interval=20s --timeout=5s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/api/system/health || exit 1
+
+# Launch High-Performance Uvicorn Server with dynamic cloud port
+CMD ["sh", "-c", "python -m uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-7860}"]

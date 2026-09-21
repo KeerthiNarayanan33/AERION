@@ -1,3 +1,13 @@
+---
+title: AERION Autonomous Border Surveillance
+emoji: 🛰️
+colorFrom: blue
+colorTo: cyan
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # 🛰️ AERION | SENTINEL-AI
 ### Next-Gen Autonomous Multi-Sensor Border Surveillance & Intrusion Intercept System
 **Smart India Hackathon 2026 Prototype — Edge Computing & Defense Perimeter Intelligence**

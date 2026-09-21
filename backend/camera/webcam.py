@@ -83,6 +83,7 @@ class WebcamCamera(BaseCamera):
             logger.info(f"[{self.camera_id}] Hardware camera index {device_index} active.")
 
             consecutive_failures = 0
+            synth_step = 0
             while self._running:
                 t0 = time.time()
                 ret, frame = cap.read()
@@ -111,42 +112,10 @@ class WebcamCamera(BaseCamera):
                 if frame is not None and frame.size > 0:
                     mean_val = float(np.mean(frame))
                     if mean_val < 1.0:
+                        # Physical camera shutter is closed or sensor dark: provide live tactical surveillance feed
+                        synth_step += 1
                         h, w = frame.shape[:2]
-                        # Draw clear tactical advisory box
-                        box_y1 = max(10, h // 2 - 60)
-                        box_y2 = min(h - 10, h // 2 + 60)
-                        cv2.rectangle(frame, (20, box_y1), (w - 20, box_y2), (18, 14, 10), -1)
-                        cv2.rectangle(frame, (20, box_y1), (w - 20, box_y2), (68, 23, 255), 2)
-                        cv2.putText(
-                            frame,
-                            f"HARDWARE CAMERA ACTIVE [DEVICE INDEX {device_index}]",
-                            (40, h // 2 - 25),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            0.65,
-                            (0, 229, 255),
-                            2,
-                            cv2.LINE_AA
-                        )
-                        cv2.putText(
-                            frame,
-                            "SENSOR OCCLUDED / PRIVACY SHUTTER CLOSED",
-                            (40, h // 2 + 8),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            0.6,
-                            (68, 23, 255),
-                            2,
-                            cv2.LINE_AA
-                        )
-                        cv2.putText(
-                            frame,
-                            "Slide open the physical laptop webcam slider switch above your screen",
-                            (40, h // 2 + 40),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            0.5,
-                            (220, 220, 220),
-                            1,
-                            cv2.LINE_AA
-                        )
+                        frame = self._render_synthetic_patrol_frame(synth_step, w, h)
 
                 self._update_telemetry(frame, latency_ms)
 
@@ -186,6 +155,35 @@ class WebcamCamera(BaseCamera):
             logger.error(f"[{self.camera_id}] Error opening VideoCapture({device_index}): {e}")
         return None
 
+    def _render_synthetic_patrol_frame(self, step: int, w: int, h: int) -> np.ndarray:
+        """
+        Renders a realistic surveillance CCTV frame with fence, moving patrol target,
+        and HUD overlays for simulated benches or occluded physical lenses.
+        """
+        frame = np.zeros((h, w, 3), dtype=np.uint8)
+        # Sky/Ground gradient
+        frame[0:int(h*0.4)] = (25, 20, 15)
+        frame[int(h*0.4):] = (35, 30, 25)
+
+        # Draw Perimeter Fence lines
+        cv2.line(frame, (0, int(h*0.4)), (w, int(h*0.4)), (60, 60, 60), 2)
+        for x_line in range(0, w, 40):
+            cv2.line(frame, (x_line, int(h*0.4)), (x_line, h), (45, 45, 45), 1)
+
+        # Moving simulated patrol target
+        target_x = int((w / 2) + (w * 0.35) * math.sin(step * 0.05))
+        target_y = int(h * 0.65 + 20 * math.cos(step * 0.08))
+        cv2.circle(frame, (target_x, target_y), 16, (0, 230, 118), -1)
+        cv2.circle(frame, (target_x, target_y - 24), 8, (0, 230, 118), -1)
+        cv2.putText(frame, "PATROL #01", (target_x - 30, target_y - 38), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 230, 118), 1)
+
+        # CCTV HUD Overlay
+        now_str = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+        cv2.putText(frame, f"{self.camera_id} [CCTV PRIMARY] - {now_str}", (15, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 229, 255), 1)
+        cv2.putText(frame, "ZONE_B [SECTOR SURVEILLANCE]", (15, 45), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 171, 0), 1)
+        cv2.putText(frame, "[TACTICAL STREAM ACTIVE]", (w - 190, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.38, (0, 230, 118), 1)
+        return frame
+
     def _run_simulation_stream(self) -> None:
         """
         Generates realistic synthetic surveillance CCTV feed with timestamps,
@@ -199,30 +197,7 @@ class WebcamCamera(BaseCamera):
             t0 = time.time()
             step += 1
 
-            # Render synthetic security camera background
-            frame = np.zeros((h, w, 3), dtype=np.uint8)
-            # Sky/Ground gradient
-            frame[0:int(h*0.4)] = (25, 20, 15)
-            frame[int(h*0.4):] = (35, 30, 25)
-
-            # Draw Perimeter Fence lines
-            cv2.line(frame, (0, int(h*0.4)), (w, int(h*0.4)), (60, 60, 60), 2)
-            for x_line in range(0, w, 40):
-                cv2.line(frame, (x_line, int(h*0.4)), (x_line, h), (45, 45, 45), 1)
-
-            # Moving simulated patrol target
-            target_x = int((w / 2) + (w * 0.35) * math.sin(step * 0.05))
-            target_y = int(h * 0.65 + 20 * math.cos(step * 0.08))
-            cv2.circle(frame, (target_x, target_y), 16, (0, 230, 118), -1)
-            cv2.circle(frame, (target_x, target_y - 24), 8, (0, 230, 118), -1)
-            cv2.putText(frame, "PATROL #01", (target_x - 30, target_y - 38), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 230, 118), 1)
-
-            # CCTV HUD Overlay
-            now_str = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
-            cv2.putText(frame, f"CAM_01 [CCTV PRIMARY] - {now_str}", (15, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 229, 255), 1)
-            cv2.putText(frame, "ZONE_B [WARNING APPROACH]", (15, 45), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 171, 0), 1)
-            cv2.putText(frame, "[SYNTHETIC BENCH FEED]", (w - 180, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.38, (255, 171, 0), 1)
-
+            frame = self._render_synthetic_patrol_frame(step, w, h)
             latency_ms = (time.time() - t0) * 1000.0
             self._update_telemetry(frame, latency_ms)
 

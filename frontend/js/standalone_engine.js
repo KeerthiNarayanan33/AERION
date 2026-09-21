@@ -16,7 +16,22 @@
  */
 
 (function () {
-    console.log('[AERION] Initializing Comprehensive Standalone Engine for Vercel...');
+    // Detect environment: Check if running with an active local backend or remote gateway
+    const isLocalOrigin = (
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.port === '8000' ||
+        window.location.port === '8443'
+    );
+    const hasCustomBackend = !!(window.AERION_BACKEND_URL && window.AERION_BACKEND_URL.trim().length > 0);
+    const forceStandalone = window.location.search.includes('standalone=true') || window.location.search.includes('mock=true');
+    const isStandaloneMode = forceStandalone || (!isLocalOrigin && !hasCustomBackend && (window.location.hostname.includes('vercel.app') || window.location.protocol === 'file:'));
+
+    if (isStandaloneMode) {
+        console.log('[AERION] Initializing Comprehensive Standalone Engine for Static/Vercel hosting...');
+    } else {
+        console.log('[AERION] Active Backend detected at ' + (window.AERION_BACKEND_URL || window.location.origin) + '. Standalone engine in passive fallback mode.');
+    }
 
     // Persistent in-memory data store for standalone session
     const db = {
@@ -495,25 +510,27 @@
                         return originalSrcDesc.set.call(this, val);
                     }
 
-                    // Otherwise intercept in standalone simulation mode
-                    if (val.includes('/api/cameras/') && (val.includes('/stream') || val.includes('/snapshot'))) {
-                        const cid = val.includes('CAM_02') ? 'CAM_02' : (val.includes('UAV_01') ? 'UAV_01' : 'CAM_01');
-                        const svgData = generateTacticalCamSvg(cid, 'ONLINE');
-                        originalSrcDesc.set.call(this, svgData);
-                        setTimeout(() => { try { this.dispatchEvent(new Event('load')); } catch (_) {} }, 10);
-                        return;
-                    }
-                    if (val.includes('/api/cameras/network/qr')) {
-                        const qrData = generateTacticalQrSvg();
-                        originalSrcDesc.set.call(this, qrData);
-                        setTimeout(() => { try { this.dispatchEvent(new Event('load')); } catch (_) {} }, 10);
-                        return;
-                    }
-                    if (val.includes('/storage/snapshots/')) {
-                        const snapData = generateTacticalCamSvg('CAM_01', 'ONLINE', 'SNAPSHOT');
-                        originalSrcDesc.set.call(this, snapData);
-                        setTimeout(() => { try { this.dispatchEvent(new Event('load')); } catch (_) {} }, 10);
-                        return;
+                    // Otherwise intercept in standalone simulation mode ONLY if no active backend is present
+                    if (isStandaloneMode) {
+                        if (val.includes('/api/cameras/') && (val.includes('/stream') || val.includes('/snapshot'))) {
+                            const cid = val.includes('CAM_02') ? 'CAM_02' : (val.includes('UAV_01') ? 'UAV_01' : 'CAM_01');
+                            const svgData = generateTacticalCamSvg(cid, 'ONLINE');
+                            originalSrcDesc.set.call(this, svgData);
+                            setTimeout(() => { try { this.dispatchEvent(new Event('load')); } catch (_) {} }, 10);
+                            return;
+                        }
+                        if (val.includes('/api/cameras/network/qr')) {
+                            const qrData = generateTacticalQrSvg();
+                            originalSrcDesc.set.call(this, qrData);
+                            setTimeout(() => { try { this.dispatchEvent(new Event('load')); } catch (_) {} }, 10);
+                            return;
+                        }
+                        if (val.includes('/storage/snapshots/')) {
+                            const snapData = generateTacticalCamSvg('CAM_01', 'ONLINE', 'SNAPSHOT');
+                            originalSrcDesc.set.call(this, snapData);
+                            setTimeout(() => { try { this.dispatchEvent(new Event('load')); } catch (_) {} }, 10);
+                            return;
+                        }
                     }
                 }
                 return originalSrcDesc.set.call(this, val);
@@ -547,6 +564,11 @@
                 if (typeof resource === 'string' && (resource.startsWith('/api/') || resource.startsWith('/storage/'))) {
                     resource = b + resource;
                 }
+                return origFetch(resource, init);
+            }
+
+            // If active local backend exists, pass through directly to real backend
+            if (!isStandaloneMode) {
                 return origFetch(resource, init);
             }
 
@@ -1258,9 +1280,11 @@
         attachUiHooks();
     }
 
-    // Initialize
-    setupMockApiInterceptor();
-    startStandaloneSimulationLoop();
+    // Initialize simulation only in standalone mode without active backend
+    if (isStandaloneMode) {
+        setupMockApiInterceptor();
+        startStandaloneSimulationLoop();
+    }
 
     window.aerionSimulator = {
         db,

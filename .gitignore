@@ -57,6 +57,7 @@ models/*.onnx
 node_modules/
 package-lock.json
 *.png
+*.jpg
 
 # Large Binaries / APKs
 *.apk
