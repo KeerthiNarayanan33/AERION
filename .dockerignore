@@ -1,18 +1,57 @@
+# Version Control
 .git
 .gitignore
+
+# Python cache
 .pytest_cache
 __pycache__
 *.pyc
 *.pyo
 *.pyd
+
+# Secrets / Config (set via Render env vars instead)
 .env
+
+# Dev tooling & tests
 tests/
 esp32/
-*.log
+node_modules/
+package.json
+package-lock.json
 *.bat
+*.log
+
+# IDE config
 .idea/
 .vscode/
 .gemini/
+
+# Large runtime artifacts (not needed at build time)
 storage/recordings/*
 storage/snapshots/*
 storage/evidence/*
+
+# Large screenshot / demo images (not needed in container)
+*.png
+*.jpg
+*.jpeg
+
+# Documentation (not needed in container)
+*.md
+DRONE_PROTOCOL_ANALYSIS.md
+SIH_2026_PRESENTATION_DECK.md
+techflow.md
+README.md
+
+# Test results
+*.json
+test_results.json
+live_screen_test_report.json
+
+# Seed / utility scripts (not needed in container)
+seed_mockup_events.py
+
+# Vercel config (not relevant for Render)
+vercel.json
+.vercelignore
+

@@ -1,5 +1,5 @@
 # SENTINEL-AI | AERION Autonomous Border Surveillance System
-# Production Container Image for Hugging Face Spaces & Cloud Deployment
+# Production Container Image for Render & Cloud Deployment
 
 FROM python:3.11-slim
 
@@ -7,7 +7,7 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
-    PORT=7860 \
+    PORT=10000 \
     SYSTEM_MODE=SIMULATED \
     HOME=/home/user
 
@@ -46,12 +46,12 @@ RUN mkdir -p storage/snapshots storage/recordings storage/evidence models \
 # Switch to non-root user
 USER user
 
-# Expose default port for Hugging Face Spaces
-EXPOSE 7860
+# Expose default port for Render (Render injects $PORT at runtime)
+EXPOSE 10000
 
 # Health inspection check
 HEALTHCHECK --interval=20s --timeout=5s --start-period=15s --retries=3 \
     CMD curl -f http://localhost:${PORT}/api/system/health || exit 1
 
 # Launch High-Performance Uvicorn Server with dynamic cloud port
-CMD ["sh", "-c", "python -m uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-7860}"]
+CMD ["sh", "-c", "python -m uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-10000}"]
