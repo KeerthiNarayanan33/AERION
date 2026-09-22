@@ -25,7 +25,8 @@
     );
     const hasCustomBackend = !!(window.AERION_BACKEND_URL && window.AERION_BACKEND_URL.trim().length > 0);
     const forceStandalone = window.location.search.includes('standalone=true') || window.location.search.includes('mock=true');
-    const isStandaloneMode = forceStandalone || (!isLocalOrigin && !hasCustomBackend && (window.location.hostname.includes('vercel.app') || window.location.protocol === 'file:'));
+    const isHFSpace = window.location.hostname.includes('hf.space') || window.location.hostname.includes('huggingface.co');
+    const isStandaloneMode = forceStandalone || (!isLocalOrigin && !hasCustomBackend && (window.location.hostname.includes('vercel.app') || isHFSpace || window.location.protocol === 'file:'));
 
     if (isStandaloneMode) {
         console.log('[AERION] Initializing Comprehensive Standalone Engine for Static/Vercel hosting...');
